@@ -1,4 +1,4 @@
-# TidBit (NLP)
+# TidBit (Backend)
 > NLP Microservice for Tidbit
 
 TidBit is a Chrome extension that allows the user to turn any web content into a simplified view-article of the most important pieces of content along with the most important sections.
