@@ -20,12 +20,12 @@ import Glider.NLP.Tokenizer
   (getWords
   , tokenize)
 import Data.Text 
-  (pack
-  , unpack
-  , concat)
+  (Text
+  , pack)
 
 
-type SectionTree = Gr SectionTreeNode String
+type SectionGraph = Gr SectionTreeNode String
+type SectionTree = (Int, SectionGraph)
 data SectionTreeNode = 
   Root 
   | ContainerNode {
@@ -33,22 +33,22 @@ data SectionTreeNode =
     }
   | Node {
       rawContent :: String, 
-      normalizedContent :: String
+      normalizedContent :: [Text]
     } 
   deriving (Eq, Show)
   
 
 htmlToSectionTrees :: String -> SectionTree
 htmlToSectionTrees htmlBody = 
-  uncurry mkGraph $ buildNormalizedTree 0 1 ([(0, Root)], []) parsed
+  (0, uncurry mkGraph $ buildNormalizedTree 0 1 ([(0, Root)], []) parsed)
   where 
     
     parsed :: TagTree String
     parsed = head (parseTree htmlBody)
     
-    normalizeContent :: String -> String
+    normalizeContent :: String -> [Text]
     normalizeContent stringContent = 
-      (unpack . concat . getWords . tokenize . stem . pack) stringContent
+      (getWords . tokenize . stem . pack) stringContent
       
     createNewChildNode :: Int 
                           -> Int
@@ -83,20 +83,17 @@ htmlToSectionTrees htmlBody =
     buildNormalizedTree _ _ x (TagLeaf _) = 
       x
     buildNormalizedTree parNode curNode x (TagBranch rel _ tagTrees) = 
-      foldl' 
-        reducer
-        initSectionTreeTuple 
-        (zip tagTrees [firstChildNode..lastChildNode])
+      folded
       where
-        renderedChildren = renderTree tagTrees
+        folded = foldl' 
+          reducer
+          initSectionTreeTuple 
+          (zip tagTrees [firstChildNode..lastChildNode])
         initSectionTreeTuple@((newParNode,_):_, _) = 
           createNewChildNode parNode curNode x "" rel renderedChildren
+        renderedChildren = renderTree tagTrees
         firstChildNode = newParNode + 1
         lastChildNode = firstChildNode + (length tagTrees) - 1
         reducer sectionTreeTuple (tagTree, curNode) = 
           buildNormalizedTree newParNode curNode sectionTreeTuple tagTree
-
-
-sectionTreeToMarkdown :: SectionTree -> String
-sectionTreeToMarkdown
       
