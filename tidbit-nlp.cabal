@@ -14,7 +14,7 @@ cabal-version:       >=1.10
 
 executable tidbit-nlp
   main-is:             Main.hs
-  -- other-modules:       
+  hs-source-dirs:      ., intelligencer       
   -- other-extensions:    
   build-depends:       base == 4.9.*, 
                         tagsoup == 0.14.*, 

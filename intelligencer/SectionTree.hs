@@ -1,4 +1,4 @@
-module SectionTreeGen where
+module Intelligencer.SectionTreeGen where
 
 import Prelude hiding (concat)
 import Data.List (foldl')
@@ -13,6 +13,7 @@ import Text.HTML.TagSoup
 import Text.HTML.TagSoup.Tree 
   (TagTree (TagBranch, TagLeaf)
   , parseTree
+  , renderTree
   )
 import Glider.NLP.Language.English.Porter (stem)
 import Glider.NLP.Tokenizer
@@ -26,11 +27,16 @@ import Data.Text
 
 type SectionTree = Gr SectionTreeNode String
 data SectionTreeNode = 
-  Root | ContainerNode | Node {
-    rawContent :: String, 
-    normalizedContent :: String
-  } deriving (Eq, Show)
-
+  Root 
+  | ContainerNode {
+      children :: String
+    }
+  | Node {
+      rawContent :: String, 
+      normalizedContent :: String
+    } 
+  deriving (Eq, Show)
+  
 
 htmlToSectionTrees :: String -> SectionTree
 htmlToSectionTrees htmlBody = 
@@ -49,13 +55,16 @@ htmlToSectionTrees htmlBody =
                           -> ([LNode SectionTreeNode], [LEdge String])
                           -> String
                           -> String
+                          -> String
                           -> ([LNode SectionTreeNode], [LEdge String])
-    createNewChildNode parNode curNode (nodes, edges) "" rel = 
+    createNewChildNode parNode curNode (nodes, edges) "" rel children = 
       (
-        (curNode, ContainerNode):nodes, 
+        (curNode, ContainerNode {
+          children = children
+        }):nodes, 
         (parNode, curNode, rel):edges
       )
-    createNewChildNode parNode curNode (nodes, edges) content rel = 
+    createNewChildNode parNode curNode (nodes, edges) content rel _ = 
       (
         (curNode, Node {
           rawContent = content,
@@ -63,14 +72,14 @@ htmlToSectionTrees htmlBody =
         }):nodes, 
         (parNode, curNode, rel):edges
       )
-      
+
     buildNormalizedTree :: Int 
                           -> Int 
                           -> ([LNode SectionTreeNode], [LEdge String])
                           -> TagTree String
                           -> ([LNode SectionTreeNode], [LEdge String])
     buildNormalizedTree parNode curNode x (TagLeaf (TagText content)) = 
-      createNewChildNode parNode curNode x content "text"
+      createNewChildNode parNode curNode x content "text" ""
     buildNormalizedTree _ _ x (TagLeaf _) = 
       x
     buildNormalizedTree parNode curNode x (TagBranch rel _ tagTrees) = 
@@ -79,10 +88,15 @@ htmlToSectionTrees htmlBody =
         initSectionTreeTuple 
         (zip tagTrees [firstChildNode..lastChildNode])
       where
+        renderedChildren = renderTree tagTrees
         initSectionTreeTuple@((newParNode,_):_, _) = 
-          createNewChildNode parNode curNode x "" rel
+          createNewChildNode parNode curNode x "" rel renderedChildren
         firstChildNode = newParNode + 1
         lastChildNode = firstChildNode + (length tagTrees) - 1
         reducer sectionTreeTuple (tagTree, curNode) = 
           buildNormalizedTree newParNode curNode sectionTreeTuple tagTree
+
+
+sectionTreeToMarkdown :: SectionTree -> String
+sectionTreeToMarkdown
       
