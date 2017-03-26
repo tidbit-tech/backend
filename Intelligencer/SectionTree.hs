@@ -22,14 +22,13 @@ import Glider.NLP.Tokenizer
   (getWords
   , tokenize)
 import Data.Text 
-  (pack
-  , unpack
-  , concat)
-import Data.Maybe
-  (mapMaybe)
+  (Text
+  , pack)
+import Text.Pandoc
 
 
-type SectionTree = Gr SectionTreeNode String
+type SectionGraph = Gr SectionTreeNode String
+type SectionTree = (Int, SectionGraph)
 data SectionTreeNode = 
   Root 
   | ContainerNode {
@@ -37,22 +36,22 @@ data SectionTreeNode =
     }
   | Node {
       rawContent :: String, 
-      normalizedContent :: String
+      normalizedContent :: [Text]
     } 
   deriving (Eq, Show)
   
 
 htmlToSectionTrees :: String -> SectionTree
 htmlToSectionTrees htmlBody = 
-  uncurry mkGraph $ buildNormalizedTree 0 1 ([(0, Root)], []) parsed
+  (0, uncurry mkGraph $ buildNormalizedTree 0 1 ([(0, Root)], []) parsed)
   where 
     
     parsed :: TagTree String
     parsed = head (parseTree htmlBody)
     
-    normalizeContent :: String -> String
+    normalizeContent :: String -> [Text]
     normalizeContent stringContent = 
-      (unpack . concat . getWords . tokenize . stem . pack) stringContent
+      (getWords . tokenize . stem . pack) stringContent
       
     createNewChildNode :: Int 
                           -> Int
@@ -87,33 +86,40 @@ htmlToSectionTrees htmlBody =
     buildNormalizedTree _ _ x (TagLeaf _) = 
       x
     buildNormalizedTree parNode curNode x (TagBranch rel _ tagTrees) = 
-      foldl' 
-        reducer
-        initSectionTreeTuple 
-        (zip tagTrees [firstChildNode..lastChildNode])
+      folded
       where
-        renderedChildren = renderTree tagTrees
+        folded = foldl' 
+          reducer
+          initSectionTreeTuple 
+          (zip tagTrees [firstChildNode..lastChildNode])
         initSectionTreeTuple@((newParNode,_):_, _) = 
           createNewChildNode parNode curNode x "" rel renderedChildren
+        renderedChildren = renderTree tagTrees
         firstChildNode = newParNode + 1
         lastChildNode = firstChildNode + (length tagTrees) - 1
         reducer sectionTreeTuple (tagTree, curNode) = 
           buildNormalizedTree newParNode curNode sectionTreeTuple tagTree
 
-
-sectionTreeToMarkdown :: SectionTree -> String
+sectionTreeToMarkdown :: SectionTree -> [String]
 sectionTreeToMarkdown sectionTree =
-  let nodes = (neighbors sectionTree 0)
-      lnodes = map (\x -> lab sectionTree x) nodes
+  let lnodes = (toLnodes $ getG sectionTree)
   in
   map nodeToText lnodes
 
-nodeToText Nothing = ""
-nodeToText (Just Root) = "r"
+getG :: SectionTree -> SectionGraph
+getG t = snd t 
+
+nodeToText :: Maybe SectionTreeNode -> String
+nodeToText Nothing = "nothin"
+nodeToText (Just Root) = "root"
 nodeToText (Just (ContainerNode children)) = children
 nodeToText (Just (Node raw _)) = raw
 
-main :: IO ()
+toLnodes t = map (\x -> lab t x) (neighbors t 1)
+
+htmlToMD string = writeMarkdown def (readHTML def string)
+
 main = do
-  print $ sectionTreeToMarkdown $ htmlToSectionTrees "<body><span>Test</span><span>Test2<span/></body><end></end>"
-      
+  print $ sectionTreeToMarkdown $ htmlToSectionTrees "<body></body>" 
+  
+
