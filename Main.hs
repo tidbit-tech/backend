@@ -8,6 +8,7 @@ import           Snap.Http.Server
 import           Data.Aeson
 import           Data.ByteString.Char8
 import qualified Data.ByteString.Lazy.Char8 as C
+import Intelligencer (intelligencer)
 
 data TBResponse = TBResponse
   { status :: Int,
@@ -33,5 +34,6 @@ tidbit :: Snap ()
 tidbit = do
   bodyBytes <- readRequestBody 2048
   let body = (C.unpack bodyBytes)
-  let res = encode (TBResponse {status=200, message="test", tbData="dataTest", readingLvl=9.0, readingTime=2.0})
+  let data_body = intelligencer body
+  let res = encode (TBResponse {status=200, message="test", tbData=data_body, readingLvl=9.0, readingTime=2.0})
   writeLBS res
