@@ -6,8 +6,10 @@ import Data.Graph.Inductive.PatriciaTree
   (Gr)
 import Data.Graph.Inductive.Graph 
   (LNode
-  , LEdge
-  , mkGraph)
+  , LEdge, nodes
+  , mkGraph
+  , neighbors
+  , lab)
 import Text.HTML.TagSoup 
   (Tag (TagText))
 import Text.HTML.TagSoup.Tree 
@@ -23,6 +25,8 @@ import Data.Text
   (pack
   , unpack
   , concat)
+import Data.Maybe
+  (mapMaybe)
 
 
 type SectionTree = Gr SectionTreeNode String
@@ -98,5 +102,18 @@ htmlToSectionTrees htmlBody =
 
 
 sectionTreeToMarkdown :: SectionTree -> String
-sectionTreeToMarkdown
+sectionTreeToMarkdown sectionTree =
+  let nodes = (neighbors sectionTree 0)
+      lnodes = map (\x -> lab sectionTree x) nodes
+  in
+  map nodeToText lnodes
+
+nodeToText Nothing = ""
+nodeToText (Just Root) = "r"
+nodeToText (Just (ContainerNode children)) = children
+nodeToText (Just (Node raw _)) = raw
+
+main :: IO ()
+main = do
+  print $ sectionTreeToMarkdown $ htmlToSectionTrees "<body><span>Test</span><span>Test2<span/></body><end></end>"
       
