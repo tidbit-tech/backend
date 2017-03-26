@@ -4,7 +4,6 @@ synopsis:            Intelligent backend that parses text into a minified articl
 -- description:         
 homepage:            https://github.com/tidbit-tech/nlp
 license:             MIT
-license-file:        LICENSE
 author:              Alastair Paragas
 maintainer:          alastairparagas@gmail.com
 -- copyright:           
@@ -23,7 +22,8 @@ executable tidbit-nlp
                         chatter == 0.9.*, 
                         glider-nlp == 0.4.*, 
                         pandoc == 1.19.*, 
-                        parallel == 3.2.*
+                        parallel == 3.2.*, 
+                        text == 1.2.*
                         
   -- hs-source-dirs:      
   default-language:    Haskell2010
