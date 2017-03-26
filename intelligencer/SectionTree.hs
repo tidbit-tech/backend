@@ -1,4 +1,4 @@
-module SectionTreeGen where
+module Intelligencer.SectionTreeGen where
 
 import Prelude hiding (concat)
 import Data.List (foldl')
