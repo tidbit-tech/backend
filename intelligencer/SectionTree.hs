@@ -95,4 +95,8 @@ htmlToSectionTrees htmlBody =
         lastChildNode = firstChildNode + (length tagTrees) - 1
         reducer sectionTreeTuple (tagTree, curNode) = 
           buildNormalizedTree newParNode curNode sectionTreeTuple tagTree
+
+
+sectionTreeToMarkdown :: SectionTree -> String
+sectionTreeToMarkdown
       
